@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"time"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -27,10 +28,12 @@ func SeedDemo(db *sql.DB) error {
 		{"u-dave", "dave", "Dave", "#0f766e"},
 		{"u-erin", "erin", "Erin", "#155e75"},
 	}
+	ts := time.Now().UnixMilli()
 	for _, u := range users {
 		_, err := db.Exec(
-			`INSERT INTO users (id, username, display_name, password_hash, avatar_color) VALUES (?, ?, ?, ?, ?)`,
-			u.id, u.username, u.display, string(hash), u.color,
+			`INSERT INTO users (id, username, display_name, password_hash, avatar_color, status, created_at, updated_at)
+			 VALUES (?, ?, ?, ?, ?, 'offline', ?, ?)`,
+			u.id, u.username, u.display, string(hash), u.color, ts, ts,
 		)
 		if err != nil {
 			return err

@@ -14,11 +14,14 @@ import (
 )
 
 func main() {
-	cfg := config.Load()
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatal(err)
+	}
 	if err := os.MkdirAll(cfg.UploadDir, 0o755); err != nil {
 		log.Fatal(err)
 	}
-	sqlDB, err := db.Open(cfg.DBPath)
+	sqlDB, err := db.Open(cfg.MySQL.DSN)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -35,7 +38,7 @@ func main() {
 	hub := ws.NewHub(authSvc, st)
 	handler := api.New(cfg, authSvc, st, hub)
 
-	log.Printf("ripple listening on %s (db=%s uploads=%s)", cfg.Addr, cfg.DBPath, cfg.UploadDir)
+	log.Printf("ripple listening on %s (mysql dsn configured, uploads=%s)", cfg.Addr, cfg.UploadDir)
 	if err := http.ListenAndServe(cfg.Addr, handler); err != nil {
 		log.Fatal(err)
 	}

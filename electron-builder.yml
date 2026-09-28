@@ -1,0 +1,47 @@
+# electron-builder 配置（P5 内部分发，免签名口径，design.md §4.2 / §9 决策①）
+# 产物（artifactName 对齐 design §7 / spec §6.3）：
+#   npm run dist:mac → dist/ripple-<version>-universal.dmg   （Intel+Apple Silicon 一份包）
+#   npm run dist:win → dist/ripple Setup <version>.exe        （NSIS，x64）
+#
+# ── 签名扩展位（将来对外分发时只补证书，不改链路）────────────────────────
+# 对外分发时取消注释并设置环境变量：
+#   macOS（Apple Developer $99/年，公证含 DMG 单独装订）：
+#     命令行: export CSC_LINK=file:///<证书.p12> CSC_NAME="<钥匙串中证书名>"
+#     并将 mac.identity 由 null 改为证书名
+#   Windows（证书强制硬件密钥；electron-builder 通过 EV 证书自动做 SmartScreen 信誉）：
+#     命令行: export CSC_LINK=file:///<证书.pfx> CSC_KEY_PASSWORD=<密码>
+# 当前内部版本：mac identity=null + win 不签名 + CSC_IDENTITY_AUTO_DISCOVERY=false
+# ────────────────────────────────────────────────────────────────────────
+
+appId: com.pixiu.ripple
+productName: Ripple
+directories:
+  output: dist
+files:
+  - electron/**/*
+  - web/dist/**/*
+  - assets/**/*
+artifactName: ripple-${version}-${arch}.${ext}
+publish: null # 无更新通道：内部阶段手动重装（design §8）
+mac:
+  # 最低系统版本口径（与根 package.json 的 Electron 锁定版本联动）：
+  # Electron 37 = Chromium 138，是最后支持 macOS 12 的内核线，真实运行下限即 12.0
+  # （Electron 预编译包自带 Info.plist 默认写 11.0，偏乐观，此处显式纠正）。
+  # 将来升级 Electron 38+（Chromium 139 起要求 macOS 13）时，此值同步改为 '13.0'。
+  minimumSystemVersion: '12.0'
+  identity: null # 免签名：首次打开需「右键 → 打开」绕过 Gatekeeper
+  target:
+    - target: dmg
+      arch:
+        - universal
+  icon: assets/icon.png # 512x512 PNG，electron-builder 自动派生 icns 各尺寸
+win:
+  icon: assets/icon.png
+  target:
+    - target: nsis
+      arch:
+        - x64
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  artifactName: ripple Setup ${version}.${ext}
