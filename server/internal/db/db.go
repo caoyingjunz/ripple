@@ -2,21 +2,20 @@ package db
 
 import (
 	"database/sql"
-	"os"
-	"path/filepath"
+	"errors"
+	"time"
 
-	_ "modernc.org/sqlite"
+	"github.com/go-sql-driver/mysql"
 )
 
-func Open(path string) (*sql.DB, error) {
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		return nil, err
-	}
-	db, err := sql.Open("sqlite", path+"?_pragma=foreign_keys(1)&_pragma=busy_timeout(5000)")
+func Open(dsn string) (*sql.DB, error) {
+	db, err := sql.Open("mysql", dsn)
 	if err != nil {
 		return nil, err
 	}
-	db.SetMaxOpenConns(1)
+	db.SetMaxOpenConns(20)
+	db.SetMaxIdleConns(5)
+	db.SetConnMaxLifetime(30 * time.Minute)
 	if err := db.Ping(); err != nil {
 		_ = db.Close()
 		return nil, err
@@ -24,77 +23,105 @@ func Open(path string) (*sql.DB, error) {
 	return db, nil
 }
 
+// IsDuplicate 判断是否唯一键冲突（errno 1062），用于幂等回查
+func IsDuplicate(err error) bool {
+	var me *mysql.MySQLError
+	return errors.As(err, &me) && me.Number == 1062
+}
+
 func Migrate(db *sql.DB) error {
-	_, err := db.Exec(`
-CREATE TABLE IF NOT EXISTS users (
-  id TEXT PRIMARY KEY,
-  username TEXT NOT NULL UNIQUE,
-  display_name TEXT NOT NULL,
-  password_hash TEXT NOT NULL,
-  avatar_color TEXT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS conversations (
-  id TEXT PRIMARY KEY,
-  user_a_id TEXT NOT NULL,
-  user_b_id TEXT NOT NULL,
-  created_at INTEGER NOT NULL,
-  last_message_at INTEGER,
-  UNIQUE(user_a_id, user_b_id),
-  FOREIGN KEY(user_a_id) REFERENCES users(id),
-  FOREIGN KEY(user_b_id) REFERENCES users(id)
-);
-
-CREATE TABLE IF NOT EXISTS messages (
-  id TEXT PRIMARY KEY,
-  conversation_id TEXT NOT NULL,
-  sender_id TEXT NOT NULL,
-  type TEXT NOT NULL,
-  body TEXT NOT NULL DEFAULT '',
-  image_url TEXT,
-  created_at INTEGER NOT NULL,
-  FOREIGN KEY(conversation_id) REFERENCES conversations(id),
-  FOREIGN KEY(sender_id) REFERENCES users(id)
-);
-
-CREATE TABLE IF NOT EXISTS bottles (
-  id TEXT PRIMARY KEY,
-  thrower_id TEXT NOT NULL,
-  content TEXT NOT NULL,
-  status TEXT NOT NULL,
-  picker_id TEXT,
-  created_at INTEGER NOT NULL,
-  picked_at INTEGER,
-  FOREIGN KEY(thrower_id) REFERENCES users(id),
-  FOREIGN KEY(picker_id) REFERENCES users(id)
-);
-
-CREATE TABLE IF NOT EXISTS bottle_threads (
-  id TEXT PRIMARY KEY,
-  bottle_id TEXT NOT NULL UNIQUE,
-  thrower_id TEXT NOT NULL,
-  picker_id TEXT NOT NULL,
-  round_count INTEGER NOT NULL DEFAULT 0,
-  max_rounds INTEGER NOT NULL,
-  revealed INTEGER NOT NULL DEFAULT 0,
-  conversation_id TEXT,
-  closed INTEGER NOT NULL DEFAULT 0,
-  created_at INTEGER NOT NULL,
-  FOREIGN KEY(bottle_id) REFERENCES bottles(id),
-  FOREIGN KEY(thrower_id) REFERENCES users(id),
-  FOREIGN KEY(picker_id) REFERENCES users(id)
-);
-
-CREATE TABLE IF NOT EXISTS bottle_messages (
-  id TEXT PRIMARY KEY,
-  thread_id TEXT NOT NULL,
-  sender_id TEXT NOT NULL,
-  alias TEXT NOT NULL,
-  body TEXT NOT NULL,
-  created_at INTEGER NOT NULL,
-  FOREIGN KEY(thread_id) REFERENCES bottle_threads(id),
-  FOREIGN KEY(sender_id) REFERENCES users(id)
-);
-`)
+	if _, err := db.Exec(schema); err != nil {
+		return err
+	}
+	// 清理上次进程崩溃残留的在线状态
+	_, err := db.Exec(`UPDATE users SET status = 'offline'`)
 	return err
 }
+
+const schema = `
+CREATE TABLE IF NOT EXISTS users (
+  id VARCHAR(36) PRIMARY KEY,
+  username VARCHAR(32) NOT NULL UNIQUE,
+  display_name VARCHAR(64) NOT NULL,
+  password_hash VARCHAR(100) NOT NULL,
+  avatar_color VARCHAR(16) NOT NULL DEFAULT '#0d9488',
+  avatar_url VARCHAR(255) NULL,
+  signature VARCHAR(128) NOT NULL DEFAULT '',
+  status VARCHAR(16) NOT NULL DEFAULT 'offline',
+  created_at BIGINT NOT NULL,
+  updated_at BIGINT NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS friendships (
+  id VARCHAR(36) PRIMARY KEY,
+  user_id VARCHAR(36) NOT NULL,
+  friend_id VARCHAR(36) NOT NULL,
+  status VARCHAR(16) NOT NULL,
+  created_at BIGINT NOT NULL,
+  updated_at BIGINT NOT NULL,
+  UNIQUE KEY uq_friendship (user_id, friend_id),
+  KEY idx_fs_friend (friend_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS conversations (
+  id VARCHAR(36) PRIMARY KEY,
+  type VARCHAR(8) NOT NULL,
+  name VARCHAR(64) NULL,
+  owner_id VARCHAR(36) NULL,
+  single_key VARCHAR(83) NULL UNIQUE,
+  last_seq BIGINT NOT NULL DEFAULT 0,
+  last_message_at BIGINT NULL,
+  created_at BIGINT NOT NULL,
+  KEY idx_conv_time (last_message_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS conversation_members (
+  conversation_id VARCHAR(36) NOT NULL,
+  user_id VARCHAR(36) NOT NULL,
+  role VARCHAR(16) NOT NULL DEFAULT 'member',
+  alias VARCHAR(32) NULL,
+  last_read_seq BIGINT NOT NULL DEFAULT 0,
+  pinned TINYINT NOT NULL DEFAULT 0,
+  muted TINYINT NOT NULL DEFAULT 0,
+  joined_at BIGINT NOT NULL,
+  PRIMARY KEY (conversation_id, user_id),
+  KEY idx_cm_user (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS messages (
+  id VARCHAR(36) PRIMARY KEY,
+  conversation_id VARCHAR(36) NOT NULL,
+  seq BIGINT NOT NULL,
+  sender_id VARCHAR(36) NOT NULL,
+  type VARCHAR(8) NOT NULL,
+  body TEXT NOT NULL,
+  image_url VARCHAR(255) NULL,
+  revoked_at BIGINT NULL,
+  created_at BIGINT NOT NULL,
+  UNIQUE KEY uq_conv_seq (conversation_id, seq),
+  KEY idx_msg_time (conversation_id, created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS bottles (
+  id VARCHAR(36) PRIMARY KEY,
+  thrower_id VARCHAR(36) NOT NULL,
+  content TEXT NOT NULL,
+  status VARCHAR(16) NOT NULL,
+  picker_id VARCHAR(36) NULL,
+  created_at BIGINT NOT NULL,
+  picked_at BIGINT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS bottle_threads (
+  id VARCHAR(36) PRIMARY KEY,
+  bottle_id VARCHAR(36) NOT NULL UNIQUE,
+  thrower_id VARCHAR(36) NOT NULL,
+  picker_id VARCHAR(36) NOT NULL,
+  round_count INT NOT NULL DEFAULT 0,
+  max_rounds INT NOT NULL DEFAULT 6,
+  revealed TINYINT NOT NULL DEFAULT 0,
+  conversation_id VARCHAR(36) NULL,
+  closed TINYINT NOT NULL DEFAULT 0,
+  created_at BIGINT NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+`
