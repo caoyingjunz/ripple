@@ -21,7 +21,7 @@ func main() {
 	if err := os.MkdirAll(cfg.UploadDir, 0o755); err != nil {
 		log.Fatal(err)
 	}
-	sqlDB, err := db.Open(cfg.MySQLDSN)
+	sqlDB, err := db.Open(cfg.MySQL.DSN)
 	if err != nil {
 		log.Fatal(err)
 	}

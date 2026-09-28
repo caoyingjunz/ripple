@@ -25,6 +25,9 @@ uploads/*
 .env.*
 !.env.example
 
+# Backend config (contains real DSN, see README for format)
+/config.yaml
+
 # Logs & debug
 *.log
 npm-debug.log*

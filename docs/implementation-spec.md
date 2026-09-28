@@ -27,12 +27,10 @@
 
 **使用与 rainbow 同一个 MySQL 实例**（host `peng` = 111.124.195.72:3306，root），本方案独占其中的 `ripple` 与 `ripple_test` 两个库（已创建，`ripple` 已置 utf8mb4）。凭据与 rainbow 一致（见 `rainbow/config.yaml`，**不写入本仓库**）。
 
-连接：**只走环境变量** `RIPPLE_MYSQL_DSN`，无默认值；为空时启动报错并提示设置方法（决策②）。格式（密码参考 rainbow 实例）：
+连接：读取仓库根目录 `config.yaml`（gitignore 不入库）的 `mysql.dsn` 字段；环境变量 `RIPPLE_MYSQL_DSN` 可覆盖（优先级 env > config.yaml）；两处皆空时启动报错并提示设置方法。config.yaml 格式见 README「快速开始」。
 
-```
-export RIPPLE_MYSQL_DSN='root:<密码>@tcp(peng:3306)/ripple?charset=utf8mb4&multiStatements=true'
-export RIPPLE_TEST_MYSQL_DSN='root:<密码>@tcp(peng:3306)/ripple_test?charset=utf8mb4&multiStatements=true'
-```
+- 运行库：`mysql.dsn: "root:<密码>@tcp(peng:3306)/ripple?charset=utf8mb4&multiStatements=true"`
+- 测试库：`go test` 走 `RIPPLE_TEST_MYSQL_DSN` 环境变量（`root:<密码>@tcp(peng:3306)/ripple_test?charset=utf8mb4&multiStatements=true`），不经 config.yaml
 
 `multiStatements=true` 供启动时建表。驱动 `github.com/go-sql-driver/mysql`，删除 `modernc.org/sqlite` 依赖及 `server/data/ripple.db` 引用（旧库文件保留在磁盘不动，代码不再使用）。
 

@@ -1,1 +1,2 @@
 2026-09-28 17:04:36 feat: 按设计文档完成 P0-P5 桌面化改造——MySQL 统一消息模型（seq 原子取号+断线补拉）、好友/群聊/未读撤回/presence、前端 11 页重构（WS 单例+Zustand）、Electron 壳（托盘/通知/多开）与双平台打包
+2026-09-28 17:47:13 feat: 后端配置文件化——根目录 config.yaml 为基准（env 可覆盖、缺 DSN fail-fast），凭据不入库；同步 README/spec 配置说明

@@ -19,19 +19,29 @@ QQ 类桌面 IM 客户端：Electron 壳 + React 前端 + Go 后端 + MySQL（�
 
 ## 快速开始
 
-### 0. 数据库（MySQL，与 rainbow 共享实例）
+### 0. 数据库与配置（MySQL，与 rainbow 共享实例）
 
-```bash
-export RIPPLE_MYSQL_DSN='root:<密码>@tcp(peng:3306)/ripple?charset=utf8mb4&multiStatements=true'
+后端配置读取仓库根目录 `config.yaml`（**不入库**，已被 .gitignore 排除，首次按下述格式创建）：
+
+```yaml
+addr: ":8080"                # 监听地址
+mysql:
+  dsn: "root:<密码>@tcp(peng:3306)/ripple?charset=utf8mb4&multiStatements=true"
+jwt_secret: "ripple-dev-secret-change-me"
+upload_dir: "uploads"        # 相对仓库根目录
+max_rounds: 6                # 漂流瓶匿名轮次上限
+max_upload: 2097152          # 上传大小上限（字节）
 ```
 
-启动时自动建表；users 表为空时 seed 演示账号。**该实例为共享实例，只允许使用 `ripple` / `ripple_test` 两个库**；连接信息只走环境变量（凭据参考 rainbow 侧配置，勿写入仓库）。
+- 优先级：环境变量（`RIPPLE_MYSQL_DSN` / `RIPPLE_ADDR` / `RIPPLE_UPLOAD` / `RIPPLE_JWT_SECRET`）**> config.yaml**，非空即覆盖；两处皆无 DSN 时启动 fail-fast
+- 启动时自动建表；users 表为空时 seed 演示账号
+- **共享实例红线**：该实例同时承载 rainbow 等其它业务，只允许使用 `ripple` / `ripple_test` 两个库；凭据参考 rainbow 侧配置，勿写入仓库
 
 ### 1. 后端
 
 ```bash
 cd server
-go run ./cmd/server        # 默认 :8080；未设置 DSN 时启动即报错
+go run ./cmd/server        # 读取仓库根 config.yaml
 ```
 
 ### 2. Web 模式
@@ -80,7 +90,8 @@ npm run dist:win           # → dist/ripple Setup x.x.x.exe（NSIS x64）
 cd server
 RIPPLE_TEST_MYSQL_DSN='root:<密码>@tcp(peng:3306)/ripple_test?charset=utf8mb4&multiStatements=true' go test ./...
 
-# 实机冒烟（39 项断言；先按「快速开始」起服务，建议 DSN 指向 ripple_test）
+# 实机冒烟（39 项断言；先起服务。若不想污染运行库，用 env 覆盖指向测试库：
+#   RIPPLE_MYSQL_DSN='root:<密码>@tcp(peng:3306)/ripple_test?charset=utf8mb4&multiStatements=true' go run ./cmd/server）
 node scripts/smoke.mjs
 
 # 桌面冒烟（窗口真实加载即退出 0）

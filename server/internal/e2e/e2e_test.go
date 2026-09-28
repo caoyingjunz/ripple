@@ -156,7 +156,7 @@ func TestE2E(t *testing.T) {
 	st := store.New(sqlDB, 6)
 	hub := ws.NewHub(authSvc, st)
 	cfg := config.Config{
-		Addr: "test", MySQLDSN: "test", UploadDir: t.TempDir(),
+		Addr: "test", MySQL: config.MySQL{DSN: "test"}, UploadDir: t.TempDir(),
 		JWTSecret: "e2e-secret", MaxRounds: 6, MaxUpload: 2 << 20,
 	}
 	srv := httptest.NewServer(api.New(cfg, authSvc, st, hub))
