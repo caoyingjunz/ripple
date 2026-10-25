@@ -70,8 +70,10 @@ export function ProfilePage() {
   return (
     <div className="page">
       <header className="topbar">
-        <Link to="/" className="linkish">
-          ← 首页
+        <Link to="/" className="topbar-back" aria-label="回首页" title="回首页">
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden>
+            <path d="M14.5 5.5 8 12l6.5 6.5" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
         </Link>
         <h2>编辑资料</h2>
         <span />

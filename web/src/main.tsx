@@ -4,8 +4,11 @@ import { BrowserRouter } from "react-router-dom";
 import App from "./App";
 import { initWsBridge } from "./ws/bridge";
 import { bootstrapSession } from "./stores/session";
+import { installAppViewportHeight } from "./utils/viewport";
 import "./styles.css";
+import "./styles-mobile.css";
 
+installAppViewportHeight();
 initWsBridge();
 void bootstrapSession();
 

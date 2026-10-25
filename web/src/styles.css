@@ -879,3 +879,173 @@ button:disabled {
   font-size: 0.9rem;
   margin-bottom: 0.5rem;
 }
+
+/* ============================================================
+ * QQ 式改版（消息/联系人参考移动 QQ 布局，沿用 ripple 主题）
+ * ============================================================ */
+
+/* 顶栏：我的头像 + 昵称（左），圆形动作按钮（右） */
+.topbar-me {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  justify-self: start;
+  color: var(--foam);
+  text-decoration: none;
+}
+
+.topbar-me-name {
+  font-size: 1.02rem;
+  font-weight: 500;
+}
+
+.topbar-plus {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid rgba(232, 247, 246, 0.45);
+  background: transparent;
+  color: var(--foam);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  justify-self: end;
+  padding: 0;
+}
+
+.topbar-plus:hover,
+.topbar-plus:focus-visible,
+.topbar-back:hover,
+.topbar-back:focus-visible {
+  background: rgba(232, 247, 246, 0.15);
+}
+
+/* 顶栏圆形返回箭头（QQ 式） */
+.topbar-back {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid rgba(232, 247, 246, 0.45);
+  background: transparent;
+  color: var(--foam);
+  display: grid;
+  place-items: center;
+  justify-self: start;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+/* 未读角标挂头像右上（QQ 式） */
+.avatar-badge {
+  position: absolute;
+  top: -5px;
+  right: -8px;
+  z-index: 1;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: #e5484d;
+  color: #fff;
+  font-size: 0.66rem;
+  font-weight: 500;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--sea-deep);
+}
+
+.avatar-badge.dot {
+  width: 12px;
+  min-width: 12px;
+  height: 12px;
+  padding: 0;
+}
+
+/* 联系人页功能入口行（新朋友 / 黑名单） */
+.entry-list {
+  margin: 0 1rem 0.75rem;
+  border-radius: 14px;
+  background: rgba(232, 247, 246, 0.92);
+  overflow: hidden;
+}
+
+.entry-row {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.8rem 1rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.95rem;
+  color: var(--ink);
+  text-align: left;
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+}
+
+.entry-row + .entry-row {
+  border-top: 0.5px solid rgba(18, 52, 60, 0.1);
+}
+
+.entry-icon {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: rgba(18, 122, 138, 0.14);
+  color: var(--sea-mid);
+  flex-shrink: 0;
+}
+
+.entry-title {
+  flex: 1;
+}
+
+.entry-chevron {
+  color: #8aa6ab;
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+.badge.gray {
+  background: #88969a;
+}
+
+/* 好友在线状态文字（QQ 式：绿点 + 在线/离线） */
+.presence-line {
+  margin: 2px 0 0;
+  font-size: 0.82rem;
+}
+
+.presence-status {
+  color: #8aa6ab;
+}
+
+.presence-status::before {
+  content: "";
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  margin-right: 4px;
+  background: #9db4b9;
+  vertical-align: 1px;
+}
+
+.presence-status.on {
+  color: #0f9960;
+}
+
+.presence-status.on::before {
+  background: #2ecc8f;
+}
+
+/* 底部导航：桌面隐藏（窄屏由 styles-mobile.css B 类显示） */
+.bottom-nav {
+  display: none;
+}

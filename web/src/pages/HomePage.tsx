@@ -21,16 +21,23 @@ export function HomePage() {
   return (
     <div className="page home">
       <header className="topbar">
-        <span className="brand-sm">Ripple</span>
-        <div className="userchip">
-          {user && <Avatar user={user} size={28} />}
-          <Link to="/profile" className="linkish">
-            {user?.display_name}
-          </Link>
-          <button type="button" className="linkish" onClick={logout}>
-            退出
-          </button>
-        </div>
+        <Link to="/profile" className="topbar-me" title="我的资料">
+          {user && <Avatar user={user} size={30} />}
+          <span className="topbar-me-name">{user?.display_name}</span>
+        </Link>
+        <span />
+        <button type="button" className="topbar-plus" title="退出登录" onClick={logout}>
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden>
+            <path
+              d="M14 4H6a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h8M10.5 12H20m0 0-3.2-3.2M20 12l-3.2 3.2"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.7"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </button>
       </header>
       <main className="home-hero">
         <h1 className="brand-hero">Ripple</h1>

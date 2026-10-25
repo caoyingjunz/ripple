@@ -88,8 +88,10 @@ export function BottleThreadPage() {
   return (
     <div className="page chat-room">
       <header className="topbar">
-        <Link to="/bottle" className="linkish">
-          ← 海边
+        <Link to="/bottle" className="topbar-back" aria-label="回海边" title="回海边">
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden>
+            <path d="M14.5 5.5 8 12l6.5 6.5" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
         </Link>
         <h2>匿名瓶中信</h2>
         <span className="muted">{thread?.my_alias}</span>

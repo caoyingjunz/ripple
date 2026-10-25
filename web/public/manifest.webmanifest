@@ -1,0 +1,16 @@
+{
+  "name": "Ripple · 漂流瓶",
+  "short_name": "Ripple",
+  "description": "聊天、好友与漂流瓶——三种相遇方式，一样重要。",
+  "lang": "zh-CN",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0b3d4a",
+  "theme_color": "#0b3d4a",
+  "icons": [
+    { "src": "./icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "./icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "./icons/icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

@@ -9,6 +9,10 @@ web/.vite/
 .turbo/
 .cache/
 
+# Playwright (E2E 产物与证据截图，不入库)
+web/test-results/
+web/playwright-report/
+
 # Backend runtime data
 server/data/
 *.db
@@ -66,3 +70,6 @@ Thumbs.db
 out/
 release/
 
+
+# 本地截图产物（H5 预览）
+web/tmp-shots/
