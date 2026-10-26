@@ -2,7 +2,13 @@ package api
 
 import (
 	"encoding/json"
+	"log"
+	"mime"
 	"net/http"
+	"os"
+	"path"
+	"path/filepath"
+	"strings"
 
 	"ripple/server/internal/auth"
 	"ripple/server/internal/config"
@@ -62,7 +68,40 @@ func New(cfg config.Config, a *auth.Service, s *store.Store, h *ws.Hub) http.Han
 
 	r.PathPrefix("/uploads/").Handler(http.StripPrefix("/uploads/", http.FileServer(http.Dir(cfg.UploadDir))))
 
+	// H5：托管 web/dist（须注册在 /api、/uploads 之后兜底）。目录缺失则只提供 API（不影响桌面端）。
+	if st, err := os.Stat(cfg.WebDir); err == nil && st.IsDir() {
+		r.PathPrefix("/").Handler(spaHandler(cfg.WebDir))
+		log.Printf("h5 static serving enabled: %s", cfg.WebDir)
+	} else {
+		log.Printf("h5 static serving disabled: %s not found (run npm run build:web)", cfg.WebDir)
+	}
+
 	return cors(r)
+}
+
+// spaHandler 静态托管 web/dist 并做 SPA 回退：文件命中直出；未命中（BrowserRouter
+// 深链/刷新）回落 index.html——与 electron/main.js 的 ripple://local/ 行为保持一致。
+func spaHandler(dir string) http.Handler {
+	// .webmanifest 在部分系统 mime 表中缺失，注册以保证 PWA 安装识别
+	_ = mime.AddExtensionType(".webmanifest", "application/manifest+json")
+	fs := http.FileServer(http.Dir(dir))
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet && r.Method != http.MethodHead {
+			http.NotFound(w, r)
+			return
+		}
+		// API 未命中路由：返回 404 JSON，绝不能回落 index.html
+		if strings.HasPrefix(r.URL.Path, "/api/") {
+			writeErr(w, http.StatusNotFound, "not found")
+			return
+		}
+		p := filepath.Join(dir, filepath.FromSlash(path.Clean("/"+r.URL.Path)))
+		if st, err := os.Stat(p); err == nil && !st.IsDir() {
+			fs.ServeHTTP(w, r)
+			return
+		}
+		http.ServeFile(w, r, filepath.Join(dir, "index.html"))
+	})
 }
 
 func cors(next http.Handler) http.Handler {

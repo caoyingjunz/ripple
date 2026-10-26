@@ -52,6 +52,20 @@ npm install
 npm run dev                # http://localhost:5173（vite proxy → :8080）
 ```
 
+### 2.5 H5 模式（手机访问）
+
+后端直接托管 `web/dist`（SPA fallback，与桌面端 ripple://local/ 行为一致）：
+
+```bash
+npm run build:web          # 产物 → web/dist（base=/，深链刷新安全）
+cd server && go run ./cmd/server
+# 浏览器访问 http://<本机IP>:8080 —— 登录/聊天/漂流瓶全部可用
+```
+
+- 手机同一 WiFi 下直接访问 `http://<电脑IP>:8080`；"添加到主屏幕"可全屏 PWA 运行（manifest 已就绪）
+- 目录由 `config.yaml` 的 `web_dir`（默认 `web/dist`）或环境变量 `RIPPLE_WEB` 控制；目录不存在时仅提供 API，不影响桌面端
+- 注意：正式对外需 HTTPS + 域名（小程序/部分浏览器能力的前置条件），局域网 HTTP 调试不受影响
+
 ### 3. 桌面模式（根目录）
 
 ```bash

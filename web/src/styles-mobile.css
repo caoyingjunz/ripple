@@ -1,0 +1,268 @@
+/* ============================================================
+ * Ripple 移动端 H5 样式（移动 H5 计划 §5.1）
+ *
+ * 本文件只允许三类规则，任何会改变桌面（≥720px）像素的规则禁止入内：
+ *   A 类｜无条件规则：桌面恒等（env() 桌面为 0；触控属性桌面无副作用）
+ *   B 类｜@media (max-width: 719.98px)：窄屏布局（与 styles.css 的
+ *        min-width: 720px 对称）
+ *   C 类｜@media (hover: none) and (pointer: coarse)：触屏交互
+ *
+ * 载入顺序：main.tsx 中于 styles.css 之后 import（同优先级靠后覆盖）。
+ * 三条铁律见各段注释：① .page.chat-room 清 min-height；② 高度回退链
+ * 拆开写；③ .messages 窄屏顶部 padding 1.9rem。
+ * ============================================================ */
+
+/* ============================================================
+ * A 类｜无条件（桌面恒等）
+ * ============================================================ */
+
+html {
+  -webkit-text-size-adjust: 100%; /* 竖横屏切换不放大字号 */
+  touch-action: manipulation; /* 去掉双击缩放 300ms 延迟 */
+}
+
+a,
+button,
+label,
+.list-row,
+.portal,
+.bubble,
+.linkish {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 防误触：聊天消息区内滚到底不把滚动链传给页面；页面本体禁纵向 overscroll（下拉刷新） */
+.messages {
+  overscroll-behavior: contain;
+}
+
+body {
+  overscroll-behavior-y: none;
+}
+
+/* 安全区（桌面 env()=0，与基础值一致） */
+.topbar {
+  padding-top: calc(1rem + env(safe-area-inset-top, 0px));
+}
+
+.composer {
+  padding-bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
+}
+
+/*
+ * 非聊天室页面给底部安全区留白。
+ * 注意：必须排除 .chat-room（其底部由 .composer 承担，重复叠加会压缩输入区）；
+ * 同时排除 .splash / .pad —— 这两个类直接挂在 .page 元素上且自带 padding
+ * （.splash{padding:2rem} / .pad{padding:0 1.25rem 1rem}），本规则优先级更高，
+ * 若不一并排除会在桌面把它们的 padding-bottom 覆盖为 0，造成桌面像素回归。
+ */
+.page:not(.chat-room):not(.splash):not(.pad) {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* —— 冻结接口（其它工程师依赖的类名/属性，不得改名）—— */
+
+/* 工程师 C：ChatRoomPage 触屏点按自己气泡时追加 .show-actions（桌面不追加，行为零变化） */
+.bubble.mine.show-actions .revoke-btn {
+  opacity: 1;
+}
+
+/* 键盘弹出态（html[data-kb] 由 utils/viewport.ts 维护）：收掉被键盘顶掉的安全区空白 */
+html[data-kb] .composer {
+  padding-bottom: 0.85rem;
+}
+
+/* ============================================================
+ * B 类｜窄屏（max-width: 719.98px）
+ * ============================================================ */
+
+@media (max-width: 719.98px) {
+  /*
+   * 铁律 1：.page 的 min-height:100vh 会抵消键盘缩短的 --app-vh
+   * （页面被撑回全高、composer 被键盘盖住）。用 .page.chat-room 提高优先级清零。
+   */
+  .page.chat-room {
+    min-height: 0;
+  }
+
+  /*
+   * 铁律 2（第一段）：高度回退链不能写单行多声明/单个 var() 兜底 ——
+   * 先给 100vh 保底，老浏览器到此为止。
+   */
+  .chat-room {
+    height: 100vh;
+  }
+
+  /* iOS 聚焦输入框自动缩放：输入控件字号必须 ≥16px（基础样式实际为 14.4px） */
+  input,
+  textarea {
+    font-size: 16px;
+  }
+
+  /*
+   * 铁律 3：顶部 padding 加到 1.9rem，否则第一条自己消息的 .revoke-btn
+   * （top 为负、被 .messages 的 overflow 裁剪）在触屏上完全不可见。
+   */
+  .messages {
+    padding: 1.9rem 1rem 1rem;
+  }
+
+  .composer {
+    gap: 0.4rem;
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+
+  .composer input {
+    font-size: 16px;
+    padding: 0.6rem 0.8rem;
+  }
+
+  .bubble {
+    max-width: 82%;
+  }
+
+  .bubble p {
+    overflow-wrap: anywhere; /* 长链接/无空格串不撑破气泡 */
+  }
+
+  .chat-img {
+    max-width: min(240px, 62vw);
+  }
+
+  /* QQ 式底部导航（仅窄屏显示；桌面 .bottom-nav{display:none} 不受影响） */
+  .bottom-nav {
+    display: flex;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 30;
+    background: rgba(11, 61, 74, 0.97);
+    border-top: 0.5px solid rgba(232, 247, 246, 0.18);
+    padding: 0.35rem 0.5rem calc(0.35rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .nav-item {
+    flex: 1;
+    display: grid;
+    justify-items: center;
+    gap: 2px;
+    padding: 2px 0;
+    color: rgba(232, 247, 246, 0.72);
+    text-decoration: none;
+    font-size: 0.68rem;
+  }
+
+  .nav-item.active {
+    color: var(--foam);
+    font-weight: 500;
+  }
+
+  .nav-icon {
+    position: relative;
+    display: grid;
+    place-items: center;
+  }
+
+  .nav-badge {
+    position: absolute;
+    top: -5px;
+    right: -12px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: 999px;
+    background: #e5484d;
+    color: #fff;
+    font-size: 0.62rem;
+    line-height: 1;
+    display: grid;
+    place-items: center;
+  }
+
+  /* 挂着底部导航的页面（:has 兄弟匹配，仅 /chat /friends /bottle）留出导航高度。
+     not 链与上方 A 类规则保持同链以赢得优先级（那 3 页都不带这些类，语义不变）。 */
+  .page:not(.chat-room):not(.splash):not(.pad):has(~ .bottom-nav) {
+    padding-bottom: calc(4.6rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* QQ 式圆角灰底搜索框 */
+  .searchbar input {
+    border-radius: 999px;
+    border-color: transparent;
+    background: rgba(232, 247, 246, 0.92);
+    padding: 0.55rem 1rem;
+  }
+
+  /* 首页门户卡片紧凑化（QQ 式入口行观感；桌面保持大卡） */
+  .home-hero {
+    padding: 1rem 1rem 2rem;
+    gap: 0.6rem;
+  }
+
+  .portal {
+    min-height: 0;
+    padding: 0.95rem 1.1rem;
+    gap: 0.15rem;
+  }
+
+  .portal-title {
+    font-size: 1.15rem;
+  }
+
+  .portal-desc {
+    display: none;
+  }
+}
+
+/* 铁律 2（第二段）：仅在支持 dvh 时启用 var(--app-vh) 回退链，写在不同块里避免整组声明被丢 */
+@supports (height: 100dvh) {
+  @media (max-width: 719.98px) {
+    /* JS 写入的 --app-vh 优先（随键盘/地址栏变化），未写入时兜底 100dvh */
+    .chat-room {
+      height: var(--app-vh, 100dvh);
+    }
+
+    .page:not(.chat-room) {
+      min-height: 100dvh;
+    }
+  }
+}
+
+/* ============================================================
+ * C 类｜触屏专属（hover: none + pointer: coarse）
+ * ============================================================ */
+
+@media (hover: none) and (pointer: coarse) {
+  /* 中和触屏上会「粘住」的 hover 位移/阴影（tap 后 hover 不消失） */
+  .portal:hover,
+  .list-row:hover,
+  .mini-btn:hover {
+    transform: none;
+    box-shadow: none;
+  }
+
+  /* :active 轻反馈（补回被去掉的 tap-highlight 按压感） */
+  .portal:active,
+  .list-row:active,
+  .mini-btn:active {
+    transform: scale(0.99);
+  }
+
+  /* 撤回按钮：放大触控命中区（top 上移配合 B 类 .messages 顶部 1.9rem padding） */
+  .revoke-btn {
+    padding: 6px 12px;
+    font-size: 0.78rem;
+    top: -1.8rem;
+  }
+
+  .linkish.mini {
+    padding: 6px 8px;
+    margin-left: 0.3rem;
+  }
+
+  .file-btn {
+    width: 44px;
+  }
+}

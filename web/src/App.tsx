@@ -1,5 +1,6 @@
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import type { ReactNode } from "react";
+import { BottomNav } from "./components/BottomNav";
 import { useSessionStore } from "./stores/session";
 import { BottleSeaPage } from "./pages/BottleSeaPage";
 import { BottleThreadPage } from "./pages/BottleThreadPage";
@@ -21,9 +22,15 @@ function Private({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
+/** 底部导航仅在三个列表页显示（聊天室/瓶子对话等详情页不显示）。 */
+const NAV_PATHS = new Set(["/chat", "/friends", "/bottle"]);
+
 export default function App() {
+  const { pathname } = useLocation();
+  const showNav = NAV_PATHS.has(pathname);
   return (
-    <Routes>
+    <>
+      <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route
@@ -99,6 +106,8 @@ export default function App() {
         }
       />
       <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+      </Routes>
+      {showNav && <BottomNav />}
+    </>
   );
 }

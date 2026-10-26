@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { api } from "../api/client";
 import { Avatar } from "../components/Avatar";
@@ -6,11 +6,14 @@ import type { User, UserSearchItem } from "../api/types";
 import { useConversationsStore } from "../stores/conversations";
 import { useFriendsStore } from "../stores/friends";
 import { usePresenceStore } from "../stores/presence";
+import { useSessionStore } from "../stores/session";
 
 type Tab = "friends" | "requests" | "blocked";
 
 export function FriendsPage() {
   const nav = useNavigate();
+  const me = useSessionStore((s) => s.user);
+  const searchRef = useRef<HTMLInputElement>(null);
   const friends = useFriendsStore((s) => s.friends);
   const pendingIn = useFriendsStore((s) => s.pending_in);
   const pendingOut = useFriendsStore((s) => s.pending_out);
@@ -235,20 +238,39 @@ export function FriendsPage() {
   return (
     <div className="page">
       <header className="topbar">
-        <Link to="/" className="linkish">
-          ← 首页
+        <Link to="/profile" className="topbar-me" title="我的资料">
+          {me && <Avatar user={me} size={30} />}
+          <span className="topbar-me-name">联系人</span>
         </Link>
-        <h2>好友</h2>
         <span />
+        <button
+          type="button"
+          className="topbar-plus"
+          title="添加好友"
+          onClick={() => searchRef.current?.focus()}
+        >
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden>
+            <circle cx="10" cy="8" r="3.2" fill="none" stroke="currentColor" strokeWidth="1.7" />
+            <path
+              d="M4.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.7"
+              strokeLinecap="round"
+            />
+            <path d="M17 7.5v5M14.5 10h5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+          </svg>
+        </button>
       </header>
       <div className="searchbar">
         <input
+          ref={searchRef}
           value={q}
           onChange={(e) => setQ(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter") void search();
           }}
-          placeholder="按用户名/昵称搜索用户…"
+          placeholder="搜索"
         />
         <button type="button" className="secondary" disabled={searching} onClick={() => void search()}>
           {searching ? "搜索中…" : "搜索"}
@@ -279,6 +301,30 @@ export function FriendsPage() {
           </ul>
         </section>
       )}
+      <div className="entry-list">
+        <button type="button" className="entry-row" onClick={() => setTab("requests")}>
+          <span className="entry-icon" aria-hidden>
+            <svg viewBox="0 0 24 24" width="20" height="20">
+              <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="1.6" />
+              <path d="M12 8v5M12 16h.01" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+            </svg>
+          </span>
+          <span className="entry-title">新朋友</span>
+          {pendingIn.length > 0 && <span className="badge">{pendingIn.length}</span>}
+          <span className="entry-chevron" aria-hidden>›</span>
+        </button>
+        <button type="button" className="entry-row" onClick={() => setTab("blocked")}>
+          <span className="entry-icon" aria-hidden>
+            <svg viewBox="0 0 24 24" width="20" height="20">
+              <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="1.6" />
+              <path d="M6 6l12 12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+            </svg>
+          </span>
+          <span className="entry-title">黑名单</span>
+          {blocked.length > 0 && <span className="badge gray">{blocked.length}</span>}
+          <span className="entry-chevron" aria-hidden>›</span>
+        </button>
+      </div>
       <div className="tab-bar">
         <button
           type="button"
@@ -379,7 +425,10 @@ function FriendRow({ user, children }: { user: User; children: ReactNode }) {
             {user.display_name}
             <span className="muted inline"> @{user.username}</span>
           </strong>
-          <p>{user.signature || " "}</p>
+          <p className="presence-line">
+            <span className={`presence-status${online ? " on" : ""}`}>{online ? "在线" : "离线"}</span>
+            {user.signature && <span className="muted inline"> · {user.signature}</span>}
+          </p>
         </div>
         <div className="row-actions">{children}</div>
       </div>

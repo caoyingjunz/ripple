@@ -6,6 +6,7 @@
   "main": "electron/main.js",
   "scripts": {
     "gen:icon": "node tools/gen-icon.js",
+    "gen:icons": "node tools/gen-web-icons.js",
     "start": "electron .",
     "dev": "RIPPLE_DEV=1 electron .",
     "smoke": "electron . --smoke",

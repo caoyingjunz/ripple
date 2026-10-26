@@ -18,6 +18,7 @@ type Config struct {
 	MySQL     MySQL  `yaml:"mysql"`
 	JWTSecret string `yaml:"jwt_secret"`
 	UploadDir string `yaml:"upload_dir"` // 相对仓库根目录
+	WebDir    string `yaml:"web_dir"`    // H5 静态产物目录，相对仓库根目录；目录不存在则仅提供 API
 	MaxRounds int    `yaml:"max_rounds"`
 	MaxUpload int64  `yaml:"max_upload"`
 }
@@ -55,6 +56,9 @@ func Load() (Config, error) {
 	if v := env("RIPPLE_UPLOAD"); v != "" {
 		c.UploadDir = v
 	}
+	if v := env("RIPPLE_WEB"); v != "" {
+		c.WebDir = v
+	}
 	if v := env("RIPPLE_JWT_SECRET"); v != "" {
 		c.JWTSecret = v
 	}
@@ -68,6 +72,9 @@ func Load() (Config, error) {
 	if c.UploadDir == "" {
 		c.UploadDir = "uploads"
 	}
+	if c.WebDir == "" {
+		c.WebDir = "web/dist"
+	}
 	if c.MaxRounds <= 0 {
 		c.MaxRounds = 6
 	}
@@ -76,6 +83,9 @@ func Load() (Config, error) {
 	}
 	if !filepath.IsAbs(c.UploadDir) {
 		c.UploadDir = filepath.Join(root, c.UploadDir)
+	}
+	if !filepath.IsAbs(c.WebDir) {
+		c.WebDir = filepath.Join(root, c.WebDir)
 	}
 	if c.MySQL.DSN == "" {
 		return Config{}, errors.New("MySQL DSN 未配置：请在仓库根目录创建 config.yaml 并填写 mysql.dsn（格式见 README），或设置环境变量 RIPPLE_MYSQL_DSN（优先级：env > config.yaml）")

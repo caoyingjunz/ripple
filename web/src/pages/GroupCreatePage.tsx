@@ -54,8 +54,10 @@ export function GroupCreatePage() {
   return (
     <div className="page">
       <header className="topbar">
-        <Link to="/chat" className="linkish">
-          ← 会话
+        <Link to="/chat" className="topbar-back" aria-label="返回会话" title="返回会话">
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden>
+            <path d="M14.5 5.5 8 12l6.5 6.5" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
         </Link>
         <h2>发起群聊</h2>
         <span />

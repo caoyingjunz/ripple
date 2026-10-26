@@ -9,6 +9,7 @@ import { useSessionStore } from "../stores/session";
 import { useWsStatusStore } from "../stores/wsStatus";
 import { wsClient } from "../ws/ws-client";
 import { fmtTime, newId } from "../utils/helpers";
+import { isCoarsePointer } from "../utils/viewport";
 
 type PendingEntry = Extract<ChatEntry, { kind: "pending" }>;
 
@@ -29,6 +30,7 @@ export function ChatRoomPage() {
   const [text, setText] = useState("");
   const [error, setError] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [actionsFor, setActionsFor] = useState<string | null>(null);
   const scroller = useRef<HTMLDivElement>(null);
   const stick = useRef(true);
   const restore = useRef<{ h: number; t: number } | null>(null);
@@ -58,9 +60,26 @@ export function ChatRoomPage() {
     if (stick.current) el.scrollTop = el.scrollHeight;
   }, [entries]);
 
+  // 键盘弹出/收起改变可视视口高度后，若仍处于贴底状态则重新贴底（历史翻页位置不受影响）
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const onViewportChange = () => {
+      const el = scroller.current;
+      if (el && stick.current) el.scrollTop = el.scrollHeight;
+    };
+    vv.addEventListener("resize", onViewportChange);
+    vv.addEventListener("scroll", onViewportChange);
+    return () => {
+      vv.removeEventListener("resize", onViewportChange);
+      vv.removeEventListener("scroll", onViewportChange);
+    };
+  }, []);
+
   function onScroll() {
     const el = scroller.current;
     if (!el) return;
+    setActionsFor(null);
     stick.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
     if (el.scrollTop < 60 && hasMore && !loadingOlder) {
       restore.current = { h: el.scrollHeight, t: el.scrollTop };
@@ -177,14 +196,35 @@ export function ChatRoomPage() {
     const mine = m.sender_id === user?.id;
     const canRevoke = mine && Date.now() - m.created_at < REVOKE_WINDOW_MS;
     return (
-      <div key={m.id} className={`bubble ${mine ? "mine" : "theirs"}`}>
+      <div
+        key={m.id}
+        className={`bubble ${mine ? "mine" : "theirs"}${
+          canRevoke && actionsFor === m.id ? " show-actions" : ""
+        }`}
+        onClick={
+          canRevoke
+            ? (e) => {
+                if (!isCoarsePointer()) return;
+                e.stopPropagation();
+                setActionsFor((prev) => (prev === m.id ? null : m.id));
+              }
+            : undefined
+        }
+      >
         {m.type === "image" && m.image_url ? (
           <img src={resolveUrl(m.image_url)} alt="" className="chat-img" />
         ) : (
           <p>{m.body}</p>
         )}
         {canRevoke && (
-          <button type="button" className="revoke-btn" onClick={() => void revoke(m.id)}>
+          <button
+            type="button"
+            className="revoke-btn"
+            onClick={(e) => {
+              e.stopPropagation();
+              void revoke(m.id);
+            }}
+          >
             撤回
           </button>
         )}
@@ -196,8 +236,17 @@ export function ChatRoomPage() {
   return (
     <div className="page chat-room">
       <header className="topbar">
-        <Link to="/chat" className="linkish">
-          ← 会话
+        <Link to="/chat" className="topbar-back" aria-label="返回会话" title="返回会话">
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden>
+            <path
+              d="M14.5 5.5 8 12l6.5 6.5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.9"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
         </Link>
         <h2 className="room-title">
           <Link to={`/conversation/${id}/info`} className="room-title-link">
@@ -219,7 +268,7 @@ export function ChatRoomPage() {
       {(error || openError || wsError) && (
         <p className="error pad">{error || openError || wsError}</p>
       )}
-      <div className="messages" ref={scroller} onScroll={onScroll}>
+      <div className="messages" ref={scroller} onScroll={onScroll} onClick={() => setActionsFor(null)}>
         {loadingOlder && <div className="sysmsg">加载更早消息…</div>}
         {entries?.map((e) => renderEntry(e))}
         {!entries && !openError && <div className="sysmsg">加载中…</div>}
